@@ -75,10 +75,38 @@ def checkForSchema(ending='*.csv'):
     
     tempSchemaMaps = []
     for file in glob.glob(ending):
-        if 'schema' in file.lower():
+        if '_schema' in file.lower():
             tempSchemaMaps.append(file)
         
     return tempSchemaMaps
+
+
+def selectDB():
+    currentSchema = checkForSchema()
+    schemaFiles = []
+    print('\n' + 5 * '*' + 'Select A Database' + 5 * '*' + '\n')
+
+    dbFlag = True
+    while dbFlag:
+        counter = -1
+        for db in currentSchema:
+            counter = counter + 1
+            print( str(counter) + '. ' + db.rstrip('_schema.csv'))
+            schemaFiles.append(db)
+            
+
+        dbChoice = input().strip()
+        
+        try:
+            dbChoice = int(dbChoice)
+            if (dbChoice > counter or dbChoice < 1):
+                print('\nValue entered is not associated with a database on file.\n'.upper())
+                continue
+        except ValueError:
+            print('\nValue entered is not an integer. Please enter an integer associated with a database.')
+            continue
+
+        dbFlag = False
 
 def updateDatabaseSchema():
     currentSchema = checkForSchema()
@@ -199,7 +227,7 @@ def updateData():
 
 
 def retrieveDatabase():
-    pass
+    
 
 
 ### END OF UTILITY FUCTIONS
