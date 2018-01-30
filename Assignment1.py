@@ -115,7 +115,7 @@ def selectDB():
         counter = 0
         for db in currentDB:
             counter = counter + 1
-            print( str(counter) + '. ' + db.split('_')[0])
+            print( str(counter) + '. ' + db.split('_')[0] + '\n')
             schemaFiles.append(db)
             
         
@@ -242,22 +242,29 @@ def retrieveDatabase():
     arrayDB = []
     tempList = []
     maxWordLen = 0
+    flag = 1
     for line in currentDB:
-        tempList = line.split(',')
+        tempLine = str(flag) + ': \t' + line
+        tempList = tempLine.split(',')
         arrayDB.append(tempList)
+        flag = flag + 1
         for item in tempList:
             if (len(item) > maxWordLen):
                 maxWordLen = len(item)
 
     colWidth = maxWordLen + 2 # padding
 
-    headerStr = ""
-   # for elem in schemaMaps[dbChoice]:
-    #    print(elem.ljust(colWidth))
-    
-    for row in range(0, len(arrayDB) - 1):
-        for col in range(0, len(schemaMaps[dbChoice]) - 1):
-            print(arrayDB[row][col].ljust(colWidth))
+    rID = 0
+    print('\n' + 10 * '*' + 'DATABASE: ' + DBS[dbChoice].split('_')[0] + ' ' + 10 * '*' + '\n')
+    for row in arrayDB:
+        cID = 0
+        for col in arrayDB[rID]:
+            print(arrayDB[rID][cID].ljust(colWidth).strip())
+            if (cID < len(row) - 1):
+                cID = cID + 1
+
+        if (rID < len(arrayDB) - 1):
+            rID = rID + 1
             
     
 
