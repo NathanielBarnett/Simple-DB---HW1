@@ -16,14 +16,19 @@
 ### Imports
 import glob
 import os
+#import numpy
 
 ### UTILITY FUNCTIONS
-def _clearSchema_():
+def _clearDBS_():
         for file in glob.glob('*.csv'):
             if 'schema' in file.lower():
+                tempFile = open(file, 'w')
+                tempFile.close()
+
+            if '_DB.csv' in file:
                 os.remove(file)
 
-        print('\n' + '*' * 5 + 'ALL SCHEMAS CLEARED'.upper() + '*' * 5)
+        print('\n' + '*' * 5 + 'ALL SCHEMAS/DATABASES CLEARED'.upper() + '*' * 5)
 
 def displayMenu():
     print('\n' + 5 * '*' + 'Database Management System' + 5 * '*' + '\n')
@@ -61,40 +66,59 @@ def addSchema():
         else:
             continue
         
-    schemaCounter = len(checkForSchema())
-    fileName = dbTitle + '_schema.csv'
-    schemaFile = open(fileName, 'w')
-    schemaFile.write(schemaString.upper().rstrip(','))
+    #schemaCounter = len(checkForSchema())
+    dbFileName = dbTitle + '_DB.csv'
+    dbFile = open(dbFileName, 'w')
+    dbFile.close()
+    schemaFileName = '_schemaMaster_.csv'
+    try:
+        schemaFile = open(schemaFileName, 'a')
+    except FileNotFoundError:
+        schemaFile = open(schemaFileName, 'w')
+    schemaFile.write(schemaString.upper().rstrip(',')) # append schema to MASTER LIST
+    schemaFile.write(',' + dbFileName + '\n')
 
     schemaFile.close()
     print('\n' + 5 * '*' + 'New schema added to storage'.upper() + 5 * '*' + '\n')
 
 
-def checkForSchema(ending='*.csv'):
+def checkForSchema(DBOnly=False, ending='*.csv'):
     """" Returns a list of files with 'ending'. Returns empty list if no files with that ending. """
-    
     tempSchemaMaps = []
-    for file in glob.glob(ending):
-        if '_schema' in file.lower():
-            tempSchemaMaps.append(file)
+    try:
+        file = open('_schemaMaster_.csv', 'r')
+    except FileNotFoundError:
+        print('\n' + 5 * '*' + 'No Initialized Schema Found' + 5 * '*' + '\n')
+        return tempSchemaMaps
+    
+    for line in file:
+        if (DBOnly == True):
+            tempLine = line.split(',')
+            tempSchemaMaps.append(tempLine[len(tempLine) - 1])
+
+        else:
+            tempSchemaMaps.append(line)
+
+    if (len(tempSchemaMaps) == 0):
+        print('\n' + 5 * '*' + 'No Initialized Schema Found' + 5 * '*' + '\n')
         
     return tempSchemaMaps
 
 
 def selectDB():
-    currentSchema = checkForSchema()
+    currentDB = checkForSchema(True,)
     schemaFiles = []
     print('\n' + 5 * '*' + 'Select A Database' + 5 * '*' + '\n')
 
     dbFlag = True
     while dbFlag:
-        counter = -1
-        for db in currentSchema:
+        counter = 0
+        for db in currentDB:
             counter = counter + 1
-            print( str(counter) + '. ' + db.rstrip('_schema.csv'))
+            print( str(counter) + '. ' + db.split('_')[0])
             schemaFiles.append(db)
             
-
+        
         dbChoice = input().strip()
         
         try:
@@ -107,44 +131,25 @@ def selectDB():
             continue
 
         dbFlag = False
+        dbChoice = dbChoice - 1 # to set counter to the index of list.
+        return dbChoice
+        
 
 def updateDatabaseSchema():
-    currentSchema = checkForSchema()
-    schemaFiles = []
-    print('\n' + 5 * '*' + 'Select A Database' + 5 * '*' + '\n')
+    schemaFiles = checkForSchema()
+    if (len(schemaFiles) == 0):
+        return
+    dbChoice = selectDB();
+    schemaParse = schemaFiles[dbChoice].split(',')
+    prevSchema = schemaParse[:len(schemaParse) - 1] # counting starts at 0, and dropping last elem.
+    prevSchemaFH = schemaParse[len(schemaParse) - 1]
+    prevSchemaStr = ''
+    for elem in prevSchema:
+        prevSchemaStr = prevSchemaStr + elem + ','
 
     dbFlag = True
     while dbFlag:
-        counter = -1
-        for db in currentSchema:
-            counter = counter + 1
-            print( str(counter) + '. ' + db.rstrip('_schema.csv'))
-            schemaFiles.append(db)
-            
-
-        dbChoice = input().strip()
-        
-        try:
-            dbChoice = int(dbChoice)
-            if (dbChoice > counter or dbChoice < 1):
-                print('\nValue entered is not associated with a database on file.\n'.upper())
-                continue
-        except ValueError:
-            print('\nValue entered is not an integer. Please enter an integer associated with a database.')
-            continue
-        
-            
-
-        dbFlag = False
-
-    file = open(schemaFiles[dbChoice], 'r')
-    file.seek(0)
-    prevSchema = file.readline()
-    file.close()
-    
-    dbFlag = True
-    while dbFlag:
-        print('\nPREVIOUS SCHEMA: ' + prevSchema + '\n')
+        print('\nPREVIOUS SCHEMA: ' + prevSchemaStr.strip(',') + '\n')
         print('\n1. Keep this Schema, and append to the end of schema.\n' +
               '2. Remove this schema, and insert new schema.\n'
               '3. Keep this schema, do not update database.\n')
@@ -158,33 +163,38 @@ def updateDatabaseSchema():
         except ValueError:
             print('\nValue entered is not an integer. Please enter an integer associated with a database.\n')
         
-            
+
+
+    newSchema = []
+    prevSchemas = []
+    prevSchemaFile = open('_schemaMaster_.csv', 'r')
+    prevSchemaFile.seek(0)
+    prevSchemas = prevSchemaFile.readlines()
+    prevSchemaFile.close()
     #1. Append to prev schema
     if prompt == 1:
-        newSchema = []
-        prevDB = []
-        prevDBFile = open(schemaFiles[dbChoice], 'r')
-        prevDBFile.seek(0)
-        prevDB = prevDBFile.readlines()
-        prevDBFile.close()
         
         schemaFlag = True
-        print('Enter each field header name for the schema, and seperate each field by a ","\n')
+        print('\nEnter each field header name for the schema, and seperate each field by a ","\n')
         print('After entering all fields for the new headers to be added to database, hit ENTER.\n')
         schemaString = input().upper()
-        DBFile = open(schemaFiles[dbChoice], 'w')
-        for i in range(len(prevDB)):
-            if i == 0:
-                DBFile.write((prevDB[i] + ',' + schemaString).rstrip(','))
-                continue
-            DBFile.writeline(prevDB[i])
+        try:
+            schemaFile = open('_schemaMaster_.csv', 'w')
+            for i in range(len(prevSchemas)):
+                if i == (dbChoice):
+                    schemaFile.write((prevSchemaStr.strip(',') + ',' + schemaString).strip(',') + ',' + prevSchemaFH)
+                else:    
+                    schemaFile.write(prevSchemas[i])
 
-        DBFile.close()
+            schemaFile.close()
+        except FileNotFoundError:
+            schemaFile.close()
+            print('EXCEPTION')
         print('\n '+ 5 * '*' + 'Schema Updated' + 5 * '*' + '\n')
 
     #2. Remove schema, and add new schema
     elif prompt == 2:
-        warning = 'g'
+        warning = 'g' #DUMMY VALUE to start while loop
         while (warning != 'Y' or warning != 'N'):
             warning = input('\nWARNING: changing the schema of apreviously defined database may result in a corrupted database. \n'
                         + 'Meaning, the newly inserted schema may not accurately define or relate to teh previously stored data. \n'
@@ -195,25 +205,18 @@ def updateDatabaseSchema():
             elif warning == 'Y':
                 break
         
-        newSchema = []
-        prevDB = []
-        prevDBFile = open(schemaFiles[dbChoice], 'r')
-        prevDBFile.seek(0)
-        prevDB = prevDBFile.readlines()
-        prevDBFile.close()
         
-        schemaFlag = True
         print('Enter each field header name for the schema, and seperate each field by a ","\n')
         print('After entering all fields for the new schema to be added to database, hit ENTER.\n')
         schemaString = input().upper().strip()
-        DBFile = open(schemaFiles[dbChoice], 'w')
-        for i in range(len(prevDB)):
-            if i == 0:
-                DBFile.write(schemaString.rstrip(','))
+        schemaFile = open('_schemaMaster_.csv', 'w')
+        for i in range(len(prevSchemas)):
+            if i == (dbChoice):
+                schemaFile.write(schemaString.rstrip(',') + ',' + schemaParse[len(schemaParse) - 1])
                 continue
-            DBFile.writeline(prevDB[i])
+            schemaFile.write(prevSchemas[i])
 
-        DBFile.close()
+        schemaFile.close()
         print('\n '+ 5 * '*' + 'Schema Updated' + 5 * '*' + '\n')
 
     # 3. Keep this schema
@@ -227,7 +230,38 @@ def updateData():
 
 
 def retrieveDatabase():
+    schemas = checkForSchema()
+    DBS = []
+    schemaMaps = []
+    for schema in schemas:
+        DBS.append(schema.split(',')[-1].strip())
+        schemaMaps.append(schema.split(',')[:-1])
     
+    dbChoice = selectDB()
+    currentDB = open(DBS[dbChoice], 'r')
+    arrayDB = []
+    tempList = []
+    maxWordLen = 0
+    for line in currentDB:
+        tempList = line.split(',')
+        arrayDB.append(tempList)
+        for item in tempList:
+            if (len(item) > maxWordLen):
+                maxWordLen = len(item)
+
+    colWidth = maxWordLen + 2 # padding
+
+    headerStr = ""
+   # for elem in schemaMaps[dbChoice]:
+    #    print(elem.ljust(colWidth))
+    
+    for row in range(0, len(arrayDB) - 1):
+        for col in range(0, len(schemaMaps[dbChoice]) - 1):
+            print(arrayDB[row][col].ljust(colWidth))
+            
+    
+
+    ### Function to print database info
 
 
 ### END OF UTILITY FUCTIONS
@@ -241,13 +275,14 @@ while flag:
     choice = input()
     if choice == '1': # Create Schema
         addSchema()
+        
               
     elif choice == '2': # Update a database schema
         updateDatabaseSchema()
     elif choice == '3': # Update data in database
         pass
     elif choice == '4': # retrieve data from a database
-        pass
+        retrieveDatabase()
     elif choice == '5': # exit form program
         flag = False
         pass
