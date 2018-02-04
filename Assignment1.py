@@ -170,7 +170,7 @@ def updateDatabaseSchema():
     if prompt == 1:
         
         schemaFlag = True
-        print('WARNING: Changing schema will result in an inaccurate database.\n')
+        print('WARNING: Changing schema may result in an inaccurate database.\n')
         print('When retrieving database, any schema fields that were added may not display correctly.\n')
         print('\nEnter each field header name for the schema, and seperate each field by a ","\n')
         print('After entering all fields for the new headers to be added to database, hit ENTER.\n')
