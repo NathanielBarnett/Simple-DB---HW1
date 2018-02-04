@@ -1,9 +1,4 @@
-#Class: CS-470
-#Instructor: Mahesh Maddumala
-#Name: Nathaniel Barnett
-#Student ID: 16208536
-#Assignment: Assignment 1 
-#Date: 01/26/18
+
 
 #Algorithm: 1. prompt user for action:
 #           - create schema (minimum of 2)
@@ -33,7 +28,7 @@ def _clearDBS_():
 def displayMenu():
     print('\n' + 5 * '*' + 'Database Management System' + 5 * '*' + '\n')
     print('1. Create Schema\n')
-    print('2. Update A Database\n')
+    print('2. Update A Schema\n')
     print('3. Update Data In A Database\n')
     print('4. Retrieve Data From A Database\n')
     print('5. Exit Database Management System\n')
@@ -175,8 +170,11 @@ def updateDatabaseSchema():
     if prompt == 1:
         
         schemaFlag = True
+        print('WARNING: Changing schema will result in an inaccurate database.\n')
+        print('When retrieving database, any schema fields that were added may not display correctly.\n')
         print('\nEnter each field header name for the schema, and seperate each field by a ","\n')
         print('After entering all fields for the new headers to be added to database, hit ENTER.\n')
+
         schemaString = input().upper()
         try:
             schemaFile = open('_schemaMaster_.csv', 'w')
@@ -196,7 +194,7 @@ def updateDatabaseSchema():
     elif prompt == 2:
         warning = 'g' #DUMMY VALUE to start while loop
         while (warning != 'Y' or warning != 'N'):
-            warning = input('\nWARNING: changing the schema of apreviously defined database may result in a corrupted database. \n'
+            warning = input('\nWARNING: changing the schema of a previously defined database may result in a corrupted database. \n'
                         + 'Meaning, the newly inserted schema may not accurately define or relate to teh previously stored data. \n'
                         + 'Do you wish to proceed? ENTER "Y" OR "N"\n').upper()
             if warning == 'N':
@@ -226,25 +224,55 @@ def updateDatabaseSchema():
 
 
 def updateData():
-    pass
+    DBS, schemaMaps = _getDBS()
+    dbChoice = selectDB()
+
+    flag = True
+    while flag:
+        newData = input('\nEnter data to be added to database, and separate each field by "," then hit ENTER.\n')
+        newData.upper()
+        correct = input('\nIs the new data correct? ENTER "Y" or "N"\n').upper()
+        if (correct == 'Y'):
+            flag = False
+        else:
+            continue
+
+    readCurrentDB = open(DBS[dbChoice], 'r')
+    arrayDB = []
+    for line in readCurrentDB:
+        tempLine = line.strip() + '\n'
+        arrayDB.append(tempLine)
+    readCurrentDB.close()
+    newData = newData.strip(',').strip(' ').upper()
+    arrayDB.append(newData)
+    writeCurrentDB = open(DBS[dbChoice],'w')
+
+    writeCurrentDB.writelines(arrayDB)
+
+    writeCurrentDB.close()
+
+    print('\n' + 5 * '*' + 'DATABASE UPDATED' + 5 * '*' + '\n')
 
 
-def retrieveDatabase():
+
+
+def _getDBS():
     schemas = checkForSchema()
     DBS = []
     schemaMaps = []
     for schema in schemas:
         DBS.append(schema.split(',')[-1].strip())
-        schemaMaps.append(schema.split(',')[:-1])
-    
-    dbChoice = selectDB()
-    currentDB = open(DBS[dbChoice], 'r')
+        schemaMaps.append(schema.split(','))
+
+    return (DBS, schemaMaps)
+
+def _printDB(DBfilename, lineSelect = False):
+    currentDB = open(DBfilename, 'r')
     arrayDB = []
-    tempList = []
     maxWordLen = 0
     flag = 1
     for line in currentDB:
-        tempLine = str(flag) + ': \t' + line
+        tempLine = str(flag) + ': ' + line.strip()
         tempList = tempLine.split(',')
         arrayDB.append(tempList)
         flag = flag + 1
@@ -252,20 +280,45 @@ def retrieveDatabase():
             if (len(item) > maxWordLen):
                 maxWordLen = len(item)
 
-    colWidth = maxWordLen + 2 # padding
+    currentDB.close()
+    colWidth = maxWordLen + 2  # padding
+    tempDBS, schemamaps = _getDBS()
+    currentSchema = ''
+    for schema in schemamaps:
+        if (schema[-1].strip() == DBfilename):
+            currentSchema = schema[:-1]
 
     rID = 0
-    print('\n' + 10 * '*' + 'DATABASE: ' + DBS[dbChoice].split('_')[0] + ' ' + 10 * '*' + '\n')
+    print('\n' + 10 * '*' + 'DATABASE: ' + DBfilename.split('_')[0] + ' ' + 10 * '*' + '\n')
     for row in arrayDB:
         cID = 0
+
+        if (rID == 0):
+            column = 0
+            for col in currentSchema:
+                print(currentSchema[column].ljust(colWidth), end='')
+                column += 1
+            print('\n', end='')
+
+
         for col in arrayDB[rID]:
-            print(arrayDB[rID][cID].ljust(colWidth).strip())
+            print(arrayDB[rID][cID].ljust(colWidth), end='')
             if (cID < len(row) - 1):
                 cID = cID + 1
 
         if (rID < len(arrayDB) - 1):
             rID = rID + 1
-            
+            print('\n', end='')
+
+    print()
+
+
+
+def retrieveDatabase():
+    DBS, schemaMaps = _getDBS()
+
+    dbChoice = selectDB()
+    _printDB(DBS[dbChoice])
     
 
     ### Function to print database info
@@ -287,7 +340,7 @@ while flag:
     elif choice == '2': # Update a database schema
         updateDatabaseSchema()
     elif choice == '3': # Update data in database
-        pass
+        updateData()
     elif choice == '4': # retrieve data from a database
         retrieveDatabase()
     elif choice == '5': # exit form program
